@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -101,5 +102,20 @@ sys_uptime(void)
   if (argint(0, &n) < 0)
       return -1;
   myproc()->trace_mask = n;
+  return 0;
+}
+
+uint64 sys_sysinfo(void) {
+  uint64 addr;
+  if (argaddr(0, &addr) < 0 || addr < 0 || addr >= MAXVA)     // check if the virtual address provided by argument is legitimate
+      return -1;
+  
+  struct sysinfo sinfo;
+  sinfo.freemem = freemem();
+  sinfo.nproc = nproc();
+
+  struct proc *p = myproc();
+  copyout(p->pagetable, addr, (char *)&sinfo, sizeof(sinfo));
+
   return 0;
 }

@@ -41,3 +41,65 @@
    ```
    - a random value stored in a2 register, as the caller did not store the third argument into a2, while the callee tries to load it from a2.
 
+
+#### 2. backtrace (moderate)
+> Implement a backtrace() function to show a list of the function calls on the stack above the point at which the backtrace() is called.
+
+1. implement the `backtrace()` function in *kernel/printf.c*
+   ```c
+   // kernel/printf.c
+   void backtrace(void) {
+     uint64 fp = r_fp();
+     uint64 stacktop = PGROUNDUP(fp);
+     uint64 stackbottom = PGROUNDDOWN(fp);
+     uint64 ra = 0;
+
+     printf("backtrace:\n");
+     while (fp < stacktop && fp > stackbottom) {
+       ra = *(uint64*)(fp-8);
+       fp = *(uint64*)(fp-16);
+       printf("%p\n", ra);
+     }
+   }
+   ```
+
+   add the prototype for `backtrace` to *kernel/defs.h*
+   ```c
+   // kernel/defs.h
+   void backtrace(void);
+   ```
+
+2. add `r_fp()` function which can read value from s0 register
+   ```c
+   // kernel/riscv.h
+   static inline uint64
+   r_fp()
+   {
+     uint64 x;
+     asm volatile("mv %0, s0" : "=r" (x) );
+     return x;
+   }
+   ```
+
+3. insert the call to `backtrace()` in `sys_sleep()` to test it
+   ```c
+   // kernel/sysproc.c
+   uint64
+   sys_sleep(void)
+   {
+     // ...
+     backtrace();
+     return 0;
+   }
+   ```
+   call it from `panic()` for following debugging
+   ```c
+   // kernel/printf.c
+   void
+   panic(char *s)
+   {
+     // ...
+     backtrace();
+     // ...
+   }
+   ```

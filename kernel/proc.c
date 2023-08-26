@@ -141,6 +141,11 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // initiate variables related to sigalarm
+  p->interval = 0;
+  p->handler = 0;
+  p->ticks = 0;
+
   return p;
 }
 

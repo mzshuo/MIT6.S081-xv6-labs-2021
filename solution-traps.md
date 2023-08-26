@@ -227,3 +227,110 @@
      // ...
    }
    ```
+
+#### test1/2: resume interrupted code
+
+1. add variables in `struct proc`, initiate and free `sigframe` when allocating and freeing process
+   ```c
+   // kernel/proc.h
+   struct proc {
+     // ...
+     int interval;
+     int ticks;
+     uint64 handler;
+     
+     int in_handler;
+     struct trapframe *sigframe;
+   };
+   ```
+
+   ```c
+   // kernel/proc.c
+   static struct proc*
+   allocproc(void)
+   {
+     // ...
+     
+     if((p->sigframe = (struct trapframe *)kalloc()) == 0){
+       freeproc(p);
+       release(&p->lock);
+       return 0;
+     }
+
+     p->interval = 0;
+     p->handler = 0;
+     p->ticks = 0;
+     p->in_handler = 0;
+
+     // ...
+   }
+
+   static void
+   freeproc(struct proc *p)
+   {
+     // ...
+
+     if(p->sigframe)
+       kfree((void*)p->sigframe);
+     p->sigframe = 0;
+
+     // ...
+   }
+   ```
+
+2. store `trapframe` into `sigframe` before jumping to `handler`
+
+   ```c
+   // kernel/trap.c
+   void
+   usertrap(void)
+   {
+     // ...
+
+     if (which_dev == 2) {
+       if (p->interval != 0 && !p->in_handler && ++(p->ticks) == p->interval) {
+         memmove(p->sigframe, p->trapframe, sizeof(*p->trapframe));
+         p->in_handler = 1;
+         p->trapframe->epc = p->handler;
+       }
+     }
+
+     // ...
+   }
+   ```
+
+3. restore `sigframe` to `trapframe` after `sigreturn` is called
+
+   ```c
+   // sysproc.c
+   uint64
+   sys_sigalarm(void)
+   {
+     int interval;
+     uint64 handler;
+
+     if (argint(0, &interval) < 0)
+       return -1;
+     if (argaddr(1, &handler) < 0)
+       return -1;
+
+     myproc()->interval = interval;
+     myproc()->handler = handler;
+     myproc()->ticks = 0;
+     myproc()->in_handler = 0;
+
+     return 0;
+   }
+
+   uint64
+   sys_sigreturn(void)
+   {
+     struct proc *p = myproc();
+
+     p->in_handler = 0;
+     p->ticks = 0;
+     memmove(p->trapframe, p->sigframe, sizeof(*p->sigframe));
+     
+     return 0;
+   }
+   ```

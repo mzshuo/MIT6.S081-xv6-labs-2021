@@ -78,8 +78,9 @@ usertrap(void)
 
   // timer interrupt, judge if sigalarm triggers handler
   if (which_dev == 2) {
-    if (p->interval != 0 && ++(p->ticks) == p->interval) {
-      p->ticks = 0;
+    if (p->interval != 0 && !p->in_handler && ++(p->ticks) == p->interval) {
+      memmove(p->sigframe, p->trapframe, sizeof(*p->trapframe));
+      p->in_handler = 1;
       p->trapframe->epc = p->handler;
     }
   }

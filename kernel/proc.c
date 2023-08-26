@@ -127,6 +127,13 @@ found:
     return 0;
   }
 
+  // Allocate a page for sigalarm.
+  if((p->sigframe = (struct trapframe *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -145,6 +152,7 @@ found:
   p->interval = 0;
   p->handler = 0;
   p->ticks = 0;
+  p->in_handler = 0;
 
   return p;
 }
@@ -158,6 +166,11 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+
+  if(p->sigframe)
+    kfree((void*)p->sigframe);
+  p->sigframe = 0;
+
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;

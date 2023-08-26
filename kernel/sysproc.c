@@ -112,6 +112,7 @@ sys_sigalarm(void)
   myproc()->interval = interval;
   myproc()->handler = handler;
   myproc()->ticks = 0;
+  myproc()->in_handler = 0;
 
   return 0;
 }
@@ -119,5 +120,11 @@ sys_sigalarm(void)
 uint64
 sys_sigreturn(void)
 {
+  struct proc *p = myproc();
+
+  p->in_handler = 0;
+  p->ticks = 0;
+  memmove(p->trapframe, p->sigframe, sizeof(*p->sigframe));
+  
   return 0;
 }

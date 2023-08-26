@@ -108,6 +108,8 @@ struct proc {
 
   // variables needed for sigalarm
   int interval;
-  uint64 handler;
   int ticks;
+  uint64 handler;
+  int in_handler;
+  struct trapframe *sigframe;
 };

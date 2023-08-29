@@ -55,8 +55,6 @@ freerange(void *pa_start, void *pa_end)
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
     inc_refcount((uint64)p);
-    if(get_refcount((uint64)p) != 1)
-      panic("debug: freerange rc != 1");
     kfree(p);
   }
 }

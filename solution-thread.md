@@ -50,7 +50,7 @@
      // YOUR CODE HERE
      // set thread context to prepare for the first time to be scheduled
      t->tcontext.ra = (uint64)func;
-     t->tcontext.sp = (uint64)t->stack + sizeof(t->stack);
+     t->tcontext.sp = (uint64)(t->stack + STACK_SIZE);
    }
    ```
 
@@ -184,8 +184,7 @@
      // then increment bstate.round.
      //
      pthread_mutex_lock(&bstate.barrier_mutex);
-     ++bstate.nthread;
-     if(bstate.nthread < nthread){
+     if(++bstate.nthread < nthread){
        pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
      } else {
        bstate.nthread = 0;

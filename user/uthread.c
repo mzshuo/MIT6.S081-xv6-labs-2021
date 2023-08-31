@@ -99,7 +99,7 @@ thread_create(void (*func)())
   // YOUR CODE HERE
   // set thread context to prepare for the first time to be scheduled
   t->tcontext.ra = (uint64)func;
-  t->tcontext.sp = (uint64)t->stack + sizeof(t->stack);
+  t->tcontext.sp = (uint64)(t->stack + STACK_SIZE);
 }
 
 void 

@@ -1,6 +1,6 @@
 ## Lab: Multithreading
 
-#### 1. Uthread: switching between threads (moderate)
+#### 1. uthread: switching between threads (moderate)
 
 > Design the context switch mechanism for a user-level threading system, and then implement it.
 
@@ -123,3 +123,48 @@
 
    	ret    /* return to ra */
    ```
+
+#### 2. using threads (moderate)
+> In this assignment you will explore parallel programming with threads and locks using a hash table. This assignment uses the UNIX pthread threading library.
+
+1. create a mutex lock for each table, initialize them and protect critical section
+
+```c
+// notxv6/ph.c
+pthread_mutex_t tablelock[NBUCKET];
+
+int
+main(int argc, char *argv[])
+{
+  // ...
+
+  for (int i = 0; i < NBUCKET; ++i)
+    pthread_mutex_init(&tablelock[i], NULL);
+
+  // ...
+}
+
+static 
+void put(int key, int value)
+{
+  int i = key % NBUCKET;
+
+  // is the key already present?
+  struct entry *e = 0;
+
+  pthread_mutex_lock(&tablelock[i]);             // lock
+  for (e = table[i]; e != 0; e = e->next) {
+    if (e->key == key)
+      break;
+  }
+  if(e){
+    // update the existing key.
+    e->value = value;
+  } else {
+    // the new is new.
+    insert(key, value, &table[i], table[i]);
+  }
+  pthread_mutex_unlock(&tablelock[i]);           // unlock
+
+}
+```

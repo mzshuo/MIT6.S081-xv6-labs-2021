@@ -169,4 +169,29 @@
    }
    ```
 
-2. 
+#### 3. barrier (moderate)
+> In this assignment you'll implement a barrier: a point in an application at which all participating threads must wait until all other participating threads reach that point too. You'll use pthread condition variables, which are a sequence coordination technique similar to xv6's sleep and wakeup.
+
+1. use `pthread_cond_t` variable to count threads, cooperating with sleep and wakeup mechanism.
+
+   ```c
+   static void 
+   barrier()
+   {
+     // YOUR CODE HERE
+     //
+     // Block until all threads have called barrier() and
+     // then increment bstate.round.
+     //
+     pthread_mutex_lock(&bstate.barrier_mutex);
+     ++bstate.nthread;
+     if(bstate.nthread < nthread){
+       pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
+     } else {
+       bstate.nthread = 0;
+       ++bstate.round;
+       pthread_cond_broadcast(&bstate.barrier_cond);
+     }
+     pthread_mutex_unlock(&bstate.barrier_mutex);
+   }
+   ```

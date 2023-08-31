@@ -129,42 +129,44 @@
 
 1. create a mutex lock for each table, initialize them and protect critical section
 
-```c
-// notxv6/ph.c
-pthread_mutex_t tablelock[NBUCKET];
+   ```c
+   // notxv6/ph.c
+   pthread_mutex_t tablelock[NBUCKET];
 
-int
-main(int argc, char *argv[])
-{
-  // ...
+   int
+   main(int argc, char *argv[])
+   {
+     // ...
 
-  for (int i = 0; i < NBUCKET; ++i)
-    pthread_mutex_init(&tablelock[i], NULL);
+     for (int i = 0; i < NBUCKET; ++i)
+       pthread_mutex_init(&tablelock[i], NULL);
 
-  // ...
-}
+     // ...
+   }
 
-static 
-void put(int key, int value)
-{
-  int i = key % NBUCKET;
+   static 
+   void put(int key, int value)
+   {
+     int i = key % NBUCKET;
 
-  // is the key already present?
-  struct entry *e = 0;
+     // is the key already present?
+     struct entry *e = 0;
 
-  pthread_mutex_lock(&tablelock[i]);             // lock
-  for (e = table[i]; e != 0; e = e->next) {
-    if (e->key == key)
-      break;
-  }
-  if(e){
-    // update the existing key.
-    e->value = value;
-  } else {
-    // the new is new.
-    insert(key, value, &table[i], table[i]);
-  }
-  pthread_mutex_unlock(&tablelock[i]);           // unlock
+     pthread_mutex_lock(&tablelock[i]);             // lock
+     for (e = table[i]; e != 0; e = e->next) {
+       if (e->key == key)
+         break;
+     }
+     if(e){
+       // update the existing key.
+       e->value = value;
+     } else {
+       // the new is new.
+       insert(key, value, &table[i], table[i]);
+     }
+     pthread_mutex_unlock(&tablelock[i]);           // unlock
 
-}
-```
+   }
+   ```
+
+2. 

@@ -92,7 +92,10 @@ kalloc(void)
     release(&kmem[cpu].lock);
   } else {
     release(&kmem[cpu].lock);
-    for (int i = 0; i < NCPU && i != cpu; ++i) {
+    for (int i = 0; i < NCPU; ++i) {
+      if (i == cpu)
+        continue;
+
       acquire(&kmem[i].lock);
       r = kmem[i].freelist;
       if(r){

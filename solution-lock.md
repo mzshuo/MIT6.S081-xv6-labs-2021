@@ -48,7 +48,6 @@
 
      push_off();
      int cpu = cpuid();
-
      acquire(&kmem[cpu].lock);
      r->next = kmem[cpu].freelist;
      kmem[cpu].freelist = r;
@@ -74,7 +73,10 @@
        release(&kmem[cpu].lock);
      } else {
        release(&kmem[cpu].lock);
-       for (int i = 0; i < NCPU && i != cpu; ++i) {
+       for (int i = 0; i < NCPU; ++i) {
+         if (i == cpu) 
+           continue;
+           
          acquire(&kmem[i].lock);
          r = kmem[i].freelist;
          if(r){

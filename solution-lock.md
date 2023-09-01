@@ -23,9 +23,7 @@
    {
      // initlock(&kmem.lock, "kmem");
      for (int i = 0; i < NCPU; ++i) {
-       char lockname[6];
-       snprintf(lockname, 5, "kmem%d", i);
-       initlock(&kmem[i].lock, lockname);
+       initlock(&kmem[i].lock, "kmem");
      }
      freerange(end, (void*)PHYSTOP);
    }

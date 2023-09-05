@@ -6,6 +6,11 @@
 #include "proc.h"
 #include "defs.h"
 
+#include "fcntl.h"
+#include "sleeplock.h"
+#include "fs.h"
+#include "file.h"
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -65,6 +70,41 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if(r_scause() == 0xd || r_scause() == 0xf){
+    uint64 va = r_stval();
+    if(va >= p->topaddr && va < TRAPFRAME){
+      // page fault
+      struct vma *vp = 0;
+      for(int i = 0; i < NVMA; ++i){
+        if(va >= p->vma[i].vm_start && va < p->vma[i].vm_end){
+          vp = &p->vma[i];
+          break;
+        }
+        if(i == NVMA - 1){
+          panic("usertrap(): vma not found");
+        }
+      }
+
+      uint64 pa = (uint64)kalloc();
+      memset((void*)pa, 0, PGSIZE);
+      ilock(vp->fp->ip);
+      readi(vp->fp->ip, 0, pa, va-(vp->vm_start), PGSIZE);
+      iunlock(vp->fp->ip);
+
+      int perm = 0 | PTE_V | PTE_U;
+      if(vp->prot & PROT_READ)
+        perm |= PTE_R;
+      if(vp->prot & PROT_WRITE)
+        perm |= PTE_W;
+      if(vp->prot & PROT_EXEC)
+        perm |= PTE_X;
+
+      mappages(p->pagetable, va, PGSIZE, pa, perm);      
+    } else {
+      printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+      p->killed = 1;
+    }
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {

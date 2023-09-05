@@ -6,6 +6,11 @@
 #include "proc.h"
 #include "defs.h"
 
+#include "fcntl.h"
+#include "sleeplock.h"
+#include "fs.h"
+#include "file.h"
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -140,6 +145,11 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+
+  for(int i = 0; i < NVMA; ++i){
+    p->vma[i].vm_start = 0;
+  }
+  p->topaddr = TRAPFRAME;
 
   return p;
 }
@@ -301,6 +311,14 @@ fork(void)
       np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = idup(p->cwd);
 
+  for(int i = 0; i < NVMA; ++i){
+    if(p->vma[i].vm_start != 0){
+      memmove(&np->vma[i], &p->vma[i], sizeof(struct vma));
+      filedup(p->vma[i].fp);
+    }
+  }
+  np->topaddr = p->topaddr;
+
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
@@ -350,6 +368,19 @@ exit(int status)
       struct file *f = p->ofile[fd];
       fileclose(f);
       p->ofile[fd] = 0;
+    }
+  }
+
+  // unmap mapped regions
+  for(int i = 0; i < NVMA; ++i){
+    if(p->vma[i].vm_start != 0 && walkaddr(p->pagetable, p->vma[i].vm_start) != 0){
+      struct vma *vp = &p->vma[i];
+      int len = vp->vm_end - vp->vm_start;
+      if(vp->flags & MAP_SHARED)
+        filewrite(vp->fp, vp->vm_start, len);
+      fileclose(vp->fp);
+      uvmunmap(p->pagetable, vp->vm_start, len/PGSIZE, 1);
+      vp->vm_start = 0;
     }
   }
 

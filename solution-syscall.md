@@ -121,7 +121,7 @@
      #define SYS_trace  22      // add this line
      ```
 
-3. implemente the system call trace in the kernel
+3. implement the system call trace in the kernel
    
    - add a new variable `trace_mask` to `proc` structure in *kernel/proc.h* （add the last line below)
 
@@ -294,7 +294,7 @@
      #define SYS_sysinfo  23
      ```
 
-3. implemente the system call sysinfo in the kernel
+3. implement the system call sysinfo in the kernel
    - add `syscalls[SYS_sysinfo]` in *kernel/syscall.c*
 
      ```c
